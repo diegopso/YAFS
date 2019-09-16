@@ -24,7 +24,7 @@ class Selection(object):
         self.lat_acc = 0.0
         self.propagation = 0.0
 
-    def get_path(self, sim, app_name, message, topology_src,alloc_DES, alloc_module, traffic, from_des):
+    def get_path(self, sim, app_name, message, topology_src, alloc_DES, alloc_module, traffic, from_des):
 
         """
         Args:

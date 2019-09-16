@@ -68,6 +68,9 @@ class Application:
     TYPE_MODULE = "MODULE"
     "A module"
 
+    TYPE_DYNAMIC_MODULE = "DYNAMIC_MODULE"
+    "A dynamic module"
+
     TYPE_SINK = "SINK"
     "A sink is like actuator"
 
@@ -110,7 +113,7 @@ class Application:
             if type == self.TYPE_SOURCE:
                 self.modules_src.append(name)
             elif type == self.TYPE_SINK:
-                self.modules_sink = name
+                self.modules_sink.append(name)
 
             self.modules.append(name)
 
@@ -215,6 +218,37 @@ class Application:
         if not module_name in self.services:
             self.services[module_name] = []
 
-        self.services[module_name].append({"type": Application.TYPE_MODULE, "dist": distribution, "param": param,
-                                           "message_in": message_in, "message_out": message_out,
-                                           "module_dest": module_dest, "p": p})
+        self.services[module_name].append({
+            "type": Application.TYPE_MODULE,
+            "dist": distribution,
+            "param": param,
+            "message_in": message_in, 
+            "message_out": message_out,
+            "module_dest": module_dest,
+            "p": p
+        })
+
+    def add_dynamic_service_module(self, module_name, service, **param):
+
+        """
+        Link to each non-pure module a management of transfering of messages
+
+        Args:
+            module_name (str): module name
+
+            message_in (Message): input message
+
+            service (function): output message. If Empty the module is a sink
+
+        Kwargs:
+            param (dict): the parameters for *service.run()* function
+
+        """
+        if not module_name in self.services:
+            self.services[module_name] = []
+
+        self.services[module_name].append({
+            "type": Application.TYPE_DYNAMIC_MODULE,
+            "service": service,
+            "param": param
+        })

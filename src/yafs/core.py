@@ -201,7 +201,7 @@ class Sim:
         """
         #TODO IMPROVE asignation of topo = alloc_DES(IdDES) , It has to move to the get_path process
         try:
-            paths,DES_dst = self.selector_path[app_name].get_path(self,app_name, message, self.alloc_DES[idDES], self.alloc_DES, self.alloc_module, self.last_busy_time,from_des=idDES)
+            paths,DES_dst = self.selector_path[app_name].get_path(self, app_name, message, self.alloc_DES[idDES], self.alloc_DES, self.alloc_module, self.last_busy_time, from_des=idDES)
 
             if DES_dst == [None] or DES_dst==[[]]:
                 self.logger.warning(
@@ -229,9 +229,9 @@ class Sim:
                     msg.idDES = DES_dst[idx]
 
                     self.network_ctrl_pipe.put(msg)
-        except KeyError:
+        except KeyError, e:
             self.logger.warning("(#DES:%i)\t--- Unreacheable DST:\t%s " % (idDES, message.name))
-
+            #app Actuator1 cant be reached.
 
     def __network_process(self):
         """
@@ -577,7 +577,31 @@ class Sim:
                 # print "Registers len: %i" %len(register_consumer_msg)
                 doBefore = False
                 for register in register_consumer_msg:
-                    if msg.name == register["message_in"].name:
+                    if "service" in register.keys():
+                        if not doBefore:
+                            self.logger.debug(
+                                "(App:%s#DES:%i#%s)\tModule - Recording the message:\t%s" % (app_name, ides, module, msg.name))
+                            type = self.NODE_METRIC
+
+                            service_time = self.__update_node_metrics(app_name, module, msg, ides, type)
+
+                            yield self.env.timeout(service_time)
+                            doBefore = True
+
+                        msgs_out = register["service"].run(msg, **register["param"])
+                        for (dst, msg_out) in msgs_out:
+                            self.logger.debug("(App:%s#DES:%i#%s)\tModule - Transmit Message:\t%s" % (
+                                app_name, ides, module, msg_out.name))
+
+                            msg_out_copy = copy.copy(msg_out)
+                            msg_out_copy.timestamp = self.env.now
+                            msg_out_copy.id = msg.id
+                            msg_out_copy.dst = dst
+                            msg_out_copy.last_idDes = copy.copy(msg.last_idDes)
+                            msg_out_copy.last_idDes.append(ides)
+
+                            self.__send_message(app_name, msg_out_copy, ides, self.FORWARD_METRIC)
+                    elif msg.name == register["message_in"].name:
                         # The message can be treated by this module
                         """
                         Processing the message
@@ -630,7 +654,7 @@ class Sim:
                                     msg_out.last_idDes.append(ides)
 
 
-                                    self.__send_message(app_name, msg_out,ides, self.FORWARD_METRIC)
+                                    self.__send_message(app_name, msg_out, ides, self.FORWARD_METRIC)
 
                                 else:
                                     # it is a broadcasting message
@@ -982,6 +1006,8 @@ class Sim:
                     id_DES.append(self.__deploy_source_module(app_name, module, distribution=service["dist"],
                                                      msg=service["message_out"],
                                                      id_node=id_topology))
+            elif service["type"] == Application.TYPE_DYNAMIC_MODULE:
+                register_consumer_msg.append({"service": service["service"], "param": service["param"]})
             else:
                 """
                 The MODULE can deal with different messages, "tuppleMapping (iFogSim)",

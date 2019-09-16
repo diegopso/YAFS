@@ -34,9 +34,15 @@ class Population(object):
         self.src_control = []
         self.sink_control = []
 
-    def set_sink_control(self, values):
+    def add_sink_control(self, values):
         """
         localization of sink modules
+        """
+        self.sink_control.append(values)
+
+    def set_sink_control(self, values):
+        """
+        localization of sink modules (deprecated: use add_sink_control)
         """
         self.sink_control.append(values)
 
@@ -50,7 +56,16 @@ class Population(object):
 
     def set_src_control(self,values):
         """
-        Stores the drivers of each message generator.
+        Stores the drivers of each message generator. (deprecated: use add_sink_control)
+
+        Args:
+            values (dict):
+        """
+        self.src_control.append(values)
+
+    def add_src_control(self, values):
+        """
+        localization of sink modules
 
         Args:
             values (dict):

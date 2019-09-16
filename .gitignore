@@ -1,0 +1,5 @@
+*.pyc
+/*.csv
+/*.gexf
+/*.sh
+results_*
